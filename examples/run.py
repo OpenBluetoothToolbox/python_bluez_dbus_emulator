@@ -4,7 +4,7 @@ from dbus_next import Variant, DBusError
 
 import asyncio
 
-from org_bluez import Application, Adapter1, Device1, GattService1, GattCharacteristic1
+from bluez_dbus_emulator import Application, Adapter1, Device1, GattService1, GattCharacteristic1
 
 class NusDevice(Device1):
 
@@ -43,4 +43,6 @@ async def main():
     await bus.request_name('org.bluez')
     await bus.wait_for_disconnect()
 
-asyncio.get_event_loop().run_until_complete(main())
+
+if __name__ == '__main__':
+    asyncio.get_event_loop().run_until_complete(main())
