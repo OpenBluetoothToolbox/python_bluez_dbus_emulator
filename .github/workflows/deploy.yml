@@ -1,0 +1,59 @@
+name: Run Deploy
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: New Version
+        default: ""
+        required: true
+      publish:
+        description: Make Public(true or false)
+        default: "false"
+        required: true
+
+jobs:
+  RunDeploy:
+    runs-on: windows-2019
+
+    steps:
+    # check users permission
+    - name: "Check Permissions"
+      uses: "lannonbr/repo-permission-check-action@2.0.0"
+      with:
+        permission: "admin"
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    # Install Dependencies
+    - name: Clone Repository
+      uses: actions/checkout@v2
+    - name: Install Python Deploy Tools
+      run: |
+        python -m pip install wheel
+        python -m pip install twine
+      shell: cmd
+    # Prepare package
+    - name: Prepare Python Package
+      run: |
+        cd $env:GITHUB_WORKSPACE
+        (gc .\setup.py).replace('0.0.1', $env:VERSION) | Out-File -encoding ASCII setup.py
+        type setup.py
+        python setup.py sdist bdist_wheel
+      env:
+        PYPI_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
+        VERSION: ${{ github.event.inputs.version }}
+    # Publish package
+    - name: Publish Packages
+      if: github.event.inputs.publish == 'true'
+      run: |
+        cd $env:GITHUB_WORKSPACE
+        twine upload --skip-existing dist/*.whl --user $env:PYPI_USER --password $env:PYPI_PASSWORD
+      env:
+        PYPI_USER: $ {{ secrets.PYPI_USER }}
+        PYPI_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
+    # To be able to test/share whl wo publishing
+    - name: Upload Artifacts
+      uses: actions/upload-artifact@v1
+      with:
+        name: dist
+        path: dist
